@@ -24,6 +24,21 @@ def get_token(user_id):
                              data=data)
     return response.json()
 
+
+def add_product_to_cart(auth_key, product_id, quantity):
+    payload = {
+        'data': {
+            'id': product_id,
+            'type': 'cart_item',
+            'quantity': quantity,}}
+    print(payload)
+    headers = {'Authorization': f'Bearer {auth_key}'}
+    url = 'https://api.moltin.com/v2/carts/cart_id/items'
+    response = requests.post(url, headers=headers, json=payload)
+    response.raise_for_status()
+    return response.json()
+
+
 def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s: %(message)s')
     logger.setLevel(logging.DEBUG)
@@ -36,7 +51,11 @@ def main():
 
     elasticpath_token = get_token(elasticpath_id)['access_token']
     products = get_products(elasticpath_token, elasticpath_url)
-    print(products)
+    current_product = products['data'][0]
+    product_id = current_product['id']
+    products_in_cart = add_product_to_cart(
+        elasticpath_token, product_id, quantity=1)
+    print(products_in_cart)
 
 
 if __name__ == '__main__':
