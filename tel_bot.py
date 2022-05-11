@@ -5,31 +5,39 @@ from dotenv import load_dotenv
 
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 
 _database = None
 
 
 def start(bot, update):
-    """
-    Хэндлер для состояния START.
+    update.message.reply_text(text=' Я чувствую волнение силы!')
+    keyboard = [[InlineKeyboardButton("Option 1", callback_data='1'),
+                 InlineKeyboardButton("Option 2", callback_data='2')],
 
-    Бот отвечает пользователю фразой "Привет!" и переводит его в состояние ECHO.
-    Теперь в ответ на его команды будет запускаеться хэндлер echo.
-    """
-    update.message.reply_text(text='Привет!')
-    return "ECHO"
+                [InlineKeyboardButton("Option 3", callback_data='3')]]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text('Please choose:', reply_markup=reply_markup)
+    return 'ECHO'
 
 
 def echo(bot, update):
-    """
-    Хэндлер для состояния ECHO.
-
-    Бот отвечает пользователю тем же, что пользователь ему написал.
-    Оставляет пользователя в состоянии ECHO.
-    """
     users_reply = update.message.text
     update.message.reply_text(users_reply)
     return "ECHO"
+
+def buttons(bot, update):
+    keyboard = [[InlineKeyboardButton("Option 1", callback_data='1'),
+                 InlineKeyboardButton("Option 2", callback_data='2')],
+
+                [InlineKeyboardButton("Option 3", callback_data='3')]]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text('Please choose:', reply_markup=reply_markup)
+    return 'ECHO'
 
 
 def handle_users_reply(update, bot):
@@ -50,7 +58,8 @@ def handle_users_reply(update, bot):
 
     states_functions = {
         'START': start,
-        'ECHO': echo
+        'ECHO': echo,
+        'BUTTONS': buttons,
     }
     state_handler = states_functions[user_state]
     # Если вы вдруг не заметите, что python-telegram-bot перехватывает ошибки.
