@@ -1,41 +1,53 @@
 import logging
-
+import time
 import requests
 from environs import Env
 
+TOKEN_EXPIRES = 0
+SHOP_TOKEN = ''
 logger = logging.getLogger('Продаём рыбку')
 
 
-def get_products(auth_key, shop_url):
+def get_products(auth_key):
     headers = {'Authorization': f'Bearer {auth_key}'}
+    url = 'https://api.moltin.com/v2/products'
 
-    response = requests.get(shop_url, headers=headers)
+    response = requests.get(url, headers=headers)
     response.raise_for_status()
 
     return response.json()
 
 
 def get_token(user_id):
+    global TOKEN_EXPIRES, SHOP_TOKEN
     data = {
         'client_id': user_id,
-        'grant_type': 'implicit',}
+        'grant_type': 'implicit'}
+    if time.time() > TOKEN_EXPIRES:
+        response = requests.post('https://api.moltin.com/oauth/access_token',
+                                 data=data).json()
+        TOKEN_EXPIRES = response['expires']
+        SHOP_TOKEN = response['access_token']
+    return SHOP_TOKEN
 
-    response = requests.post('https://api.moltin.com/oauth/access_token',
-                             data=data)
-    return response.json()
 
-
-def add_product_to_cart(auth_key, product_id, quantity):
+def add_product_to_cart(auth_key, product_id, quantity, cart_id='card_id'):
     payload = {
         'data': {
             'id': product_id,
             'type': 'cart_item',
-            'quantity': quantity,}}
-    print(payload)
+            'quantity': quantity}}
     headers = {'Authorization': f'Bearer {auth_key}'}
-    url = 'https://api.moltin.com/v2/carts/cart_id/items'
+    url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
     response = requests.post(url, headers=headers, json=payload)
-    response.raise_for_status()
+    return response.json()
+
+
+def get_products_in_cart(auth_key, card_id='card_id'):
+    headers = {'Authorization': f'Bearer {auth_key}',}
+    url = f'https://api.moltin.com/v2/carts/{card_id}/items'
+
+    response = requests.get(url, headers=headers)
     return response.json()
 
 
@@ -47,15 +59,14 @@ def main():
     env.read_env()
 
     elasticpath_id = env.str('ELASTICPATH')
-    elasticpath_url = 'https://api.moltin.com/v2/products'
 
-    elasticpath_token = get_token(elasticpath_id)['access_token']
-    products = get_products(elasticpath_token, elasticpath_url)
+    elasticpath_token = get_token(elasticpath_id)
+    products = get_products(elasticpath_token)
     current_product = products['data'][0]
     product_id = current_product['id']
     products_in_cart = add_product_to_cart(
         elasticpath_token, product_id, quantity=1)
-    print(products_in_cart)
+    print(get_products_in_cart(elasticpath_token))
 
 
 if __name__ == '__main__':
