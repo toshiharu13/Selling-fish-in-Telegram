@@ -2,27 +2,32 @@ import os
 import logging
 import redis
 from dotenv import load_dotenv
-
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import textwrap
 
-from elasticpath_api import (TOKEN_EXPIRES, SHOP_TOKEN, get_token, get_products)
+from elasticpath_api import (
+    TOKEN_EXPIRES, SHOP_TOKEN, get_token, get_products, get_product_by_id)
 
 _database = None
 
 
 def start(bot, update):
+    chat_id = update.effective_chat.id
     shop_products = get_products()
-    update.message.reply_text(text='Я чувствую волнение силы')
+    bot.bot.send_message(chat_id=chat_id, text='Я чувствую волнение силы')
     keyboard = []
     for product in shop_products['data']:
         keyboard.append([InlineKeyboardButton(product['name'], callback_data=product['id'])])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    update.message.reply_text('Please choose:', reply_markup=reply_markup)
-    return 'ECHO'
+    bot.bot.send_message(
+        chat_id=chat_id,
+        text='Please choose:',
+        reply_markup=reply_markup)
+    return 'HANDLE_MENU'
 
 
 def echo(bot, update):
@@ -38,16 +43,23 @@ def echo(bot, update):
     return "ECHO"
 
 
-def buttons(bot, update):
-    keyboard = [[InlineKeyboardButton("Option 1", callback_data='1'),
-                 InlineKeyboardButton("Option 2", callback_data='2')],
-
-                [InlineKeyboardButton("Option 3", callback_data='3')]]
-
+def handle_menu(bot, update):
+    keyboard = [[InlineKeyboardButton("В главное меню", callback_data='Z')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+    prod_id = update.callback_query.data
+    product_description = get_product_by_id(prod_id)
+    text = textwrap.dedent(f'''
+    Название: {product_description['data']['name']}
+    Описание: {product_description['data']['description']}
+    Цена: {product_description['data']['meta']['display_price']['with_tax']['formatted']}
+    Наличие: {product_description['data']['meta']['stock']['availability']}''')
+    chat_id = update.effective_chat.id
 
-    update.message.reply_text('Please choose:', reply_markup=reply_markup)
-    return 'ECHO'
+    bot.bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        reply_markup=reply_markup)
+    return 'START'
 
 
 def handle_users_reply(update, bot):
@@ -68,12 +80,9 @@ def handle_users_reply(update, bot):
     states_functions = {
         'START': start,
         'ECHO': echo,
-        'BUTTONS': buttons,
+        'HANDLE_MENU': handle_menu,
     }
     state_handler = states_functions[user_state]
-    # Если вы вдруг не заметите, что python-telegram-bot перехватывает ошибки.
-    # Оставляю этот try...except, чтобы код не падал молча.
-    # Этот фрагмент можно переписать.
     try:
         next_state = state_handler(bot, update)
         db.set(chat_id, next_state)

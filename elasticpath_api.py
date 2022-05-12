@@ -16,7 +16,16 @@ def get_products():
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()
+    return response.json()
 
+
+def get_product_by_id(prod_id):
+    auth_key = get_token()
+    headers = {'Authorization': f'Bearer {auth_key}'}
+    url = f'https://api.moltin.com/v2/products/{prod_id}'
+
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
