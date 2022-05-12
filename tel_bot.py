@@ -5,17 +5,19 @@ from dotenv import load_dotenv
 
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+from elasticpath_api import (TOKEN_EXPIRES, SHOP_TOKEN, get_token, get_products)
 
 _database = None
 
 
 def start(bot, update):
-    update.message.reply_text(text=' Я чувствую волнение силы!')
-    keyboard = [[InlineKeyboardButton("Option 1", callback_data='1'),
-                 InlineKeyboardButton("Option 2", callback_data='2')],
-
-                [InlineKeyboardButton("Option 3", callback_data='3')]]
+    shop_products = get_products()
+    update.message.reply_text(text='Я чувствую волнение силы')
+    keyboard = []
+    for product in shop_products['data']:
+        keyboard.append([InlineKeyboardButton(product['name'], callback_data=product['id'])])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -24,9 +26,17 @@ def start(bot, update):
 
 
 def echo(bot, update):
-    users_reply = update.message.text
-    update.message.reply_text(users_reply)
+    try:
+        users_reply = update.message.text
+        update.message.reply_text(users_reply)
+    except AttributeError:
+        users_reply = update.callback_query.data
+        chat_id = update.effective_chat.id
+    bot.bot.send_message(
+        chat_id=chat_id,
+        text=users_reply,)
     return "ECHO"
+
 
 def buttons(bot, update):
     keyboard = [[InlineKeyboardButton("Option 1", callback_data='1'),
@@ -54,7 +64,6 @@ def handle_users_reply(update, bot):
         user_state = 'START'
     else:
         user_state = db.get(chat_id)
-        print(user_state)
 
     states_functions = {
         'START': start,

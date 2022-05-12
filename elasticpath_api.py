@@ -2,13 +2,15 @@ import logging
 import time
 import requests
 from environs import Env
+import os
 
 TOKEN_EXPIRES = 0
 SHOP_TOKEN = ''
 logger = logging.getLogger('Продаём рыбку')
 
 
-def get_products(auth_key):
+def get_products():
+    auth_key = get_token()
     headers = {'Authorization': f'Bearer {auth_key}'}
     url = 'https://api.moltin.com/v2/products'
 
@@ -18,10 +20,11 @@ def get_products(auth_key):
     return response.json()
 
 
-def get_token(user_id):
+def get_token():
+    elasticpath_id = os.environ['ELASTICPATH']
     global TOKEN_EXPIRES, SHOP_TOKEN
     data = {
-        'client_id': user_id,
+        'client_id': elasticpath_id,
         'grant_type': 'implicit'}
     if time.time() > TOKEN_EXPIRES:
         response = requests.post('https://api.moltin.com/oauth/access_token',
@@ -60,7 +63,7 @@ def main():
 
     elasticpath_id = env.str('ELASTICPATH')
 
-    elasticpath_token = get_token(elasticpath_id)
+    elasticpath_token = get_token()
     products = get_products(elasticpath_token)
     current_product = products['data'][0]
     product_id = current_product['id']
