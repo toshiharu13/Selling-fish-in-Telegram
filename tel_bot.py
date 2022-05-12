@@ -8,7 +8,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import textwrap
 
 from elasticpath_api import (
-    TOKEN_EXPIRES, SHOP_TOKEN, get_token, get_products, get_product_by_id)
+    TOKEN_EXPIRES, SHOP_TOKEN, get_token, get_products, get_product_by_id,
+    get_image_by_id)
 
 _database = None
 
@@ -44,10 +45,13 @@ def echo(bot, update):
 
 
 def handle_menu(bot, update):
+    query = update.callback_query
     keyboard = [[InlineKeyboardButton("В главное меню", callback_data='Z')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    prod_id = update.callback_query.data
+    prod_id = query.data
     product_description = get_product_by_id(prod_id)
+    img_id = product_description['data']['relationships']['main_image']['data']['id']
+    image = get_image_by_id(img_id)
     text = textwrap.dedent(f'''
     Название: {product_description['data']['name']}
     Описание: {product_description['data']['description']}
@@ -55,10 +59,21 @@ def handle_menu(bot, update):
     Наличие: {product_description['data']['meta']['stock']['availability']}''')
     chat_id = update.effective_chat.id
 
-    bot.bot.send_message(
+    if image:
+        bot.bot.send_photo(
+            photo=image,
+            chat_id=chat_id,
+            caption=text,
+            reply_markup=reply_markup)
+    else:
+        bot.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=reply_markup)
+
+    bot.bot.delete_message(
         chat_id=chat_id,
-        text=text,
-        reply_markup=reply_markup)
+        message_id=query.message.message_id,)
     return 'START'
 
 

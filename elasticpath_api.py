@@ -29,6 +29,18 @@ def get_product_by_id(prod_id):
     return response.json()
 
 
+def get_image_by_id(img_id):
+    auth_key = get_token()
+    headers = {'Authorization': f'Bearer {auth_key}'}
+    url = f'https://api.moltin.com/v2/files/{img_id}'
+
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    img = response.json()['data']['link']['href']
+    return img
+
+
 def get_token():
     elasticpath_id = os.environ['ELASTICPATH']
     global TOKEN_EXPIRES, SHOP_TOKEN
