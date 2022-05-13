@@ -68,11 +68,23 @@ def add_product_to_cart(product_id, quantity, cart_id='card_id'):
     return response.json()
 
 
-def get_products_in_cart(auth_key, card_id='card_id'):
+def get_products_in_cart(card_id):
+    auth_key = get_token()
     headers = {'Authorization': f'Bearer {auth_key}',}
     url = f'https://api.moltin.com/v2/carts/{card_id}/items'
 
     response = requests.get(url, headers=headers)
+    return response.json()
+
+
+def get_cart_total(cart_id):
+    auth_key = get_token()
+    headers = {'Authorization': f'Bearer {auth_key}',}
+    url = f"https://api.moltin.com/v2/carts/{cart_id}"
+
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
     return response.json()
 
 
@@ -82,15 +94,6 @@ def main():
 
     env = Env()
     env.read_env()
-
-    elasticpath_id = env.str('ELASTICPATH')
-
-    elasticpath_token = get_token()
-    products = get_products(elasticpath_token)
-    current_product = products['data'][0]
-    product_id = current_product['id']
-    products_in_cart = add_product_to_cart(product_id, quantity=1)
-    print(get_products_in_cart(elasticpath_token))
 
 
 if __name__ == '__main__':

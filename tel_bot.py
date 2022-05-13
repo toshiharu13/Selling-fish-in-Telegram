@@ -8,7 +8,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import textwrap
 
 from elasticpath_api import (
-    get_products, get_product_by_id, add_product_to_cart, get_image_by_id)
+    get_product_by_id, add_product_to_cart, get_image_by_id,
+    get_products_in_cart, get_cart_total)
 from main_menu_handler import handle_main_menu
 
 _database = None
@@ -38,6 +39,23 @@ def handle_description(bot, update):
     if query.data == 'back':
         handle_main_menu(bot, update)
         return 'HANDLE_MENU'
+    elif query.data == 'cart':
+        products_in_cart = get_products_in_cart(chat_id)
+        total_in_card = get_cart_total(chat_id)
+        for cart_item in products_in_cart["data"]:
+            display_price = cart_item["meta"]["display_price"]["with_tax"]
+
+            text = textwrap.dedent(
+                f"""\
+                {cart_item['name']}
+                {cart_item['description']}
+                {display_price['unit']['formatted']} per kg
+                {cart_item['quantity']} kg in cart for {display_price['value']['formatted']}
+                """)
+            bot.bot.send_message(
+                chat_id=chat_id,
+                text=text,)
+
     else:
         amount, product_id = query.data.split('|')
         cart_id = query.message.chat.id
@@ -56,7 +74,8 @@ def handle_menu(bot, update):
         [InlineKeyboardButton('1кг', callback_data=f'{1}|{prod_id}'),
          InlineKeyboardButton('5кг', callback_data=f'{5}|{prod_id}'),
          InlineKeyboardButton('10кг', callback_data=f'{10}|{prod_id}')],
-        [InlineKeyboardButton('В главное меню', callback_data='back')]]
+        [InlineKeyboardButton('В главное меню', callback_data='back')],
+        [InlineKeyboardButton('Карзина', callback_data='cart')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     img_id = product_description['data']['relationships']['main_image']['data']['id']
