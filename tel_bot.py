@@ -10,24 +10,13 @@ import textwrap
 from elasticpath_api import (
     TOKEN_EXPIRES, SHOP_TOKEN, get_token, get_products, get_product_by_id,
     get_image_by_id)
+from main_menu_handler import handle_main_menu
 
 _database = None
 
 
 def start(bot, update):
-    chat_id = update.effective_chat.id
-    shop_products = get_products()
-    bot.bot.send_message(chat_id=chat_id, text='Я чувствую волнение силы')
-    keyboard = []
-    for product in shop_products['data']:
-        keyboard.append([InlineKeyboardButton(product['name'], callback_data=product['id'])])
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    bot.bot.send_message(
-        chat_id=chat_id,
-        text='Please choose:',
-        reply_markup=reply_markup)
+    handle_main_menu(bot, update)
     return 'HANDLE_MENU'
 
 
@@ -44,9 +33,16 @@ def echo(bot, update):
     return "ECHO"
 
 
+def handle_description(bot, update):
+    handle_main_menu(bot, update)
+    query = update.callback_query
+    if query.data == 'back':
+        return 'HANDLE_MENU'
+
+
 def handle_menu(bot, update):
     query = update.callback_query
-    keyboard = [[InlineKeyboardButton("В главное меню", callback_data='Z')]]
+    keyboard = [[InlineKeyboardButton("В главное меню", callback_data='back')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     prod_id = query.data
     product_description = get_product_by_id(prod_id)
@@ -74,7 +70,7 @@ def handle_menu(bot, update):
     bot.bot.delete_message(
         chat_id=chat_id,
         message_id=query.message.message_id,)
-    return 'START'
+    return 'HANDLE_DESCRIPTION'
 
 
 def handle_users_reply(update, bot):
@@ -96,6 +92,7 @@ def handle_users_reply(update, bot):
         'START': start,
         'ECHO': echo,
         'HANDLE_MENU': handle_menu,
+        'HANDLE_DESCRIPTION': handle_description,
     }
     state_handler = states_functions[user_state]
     try:
