@@ -8,8 +8,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import textwrap
 
 from elasticpath_api import (
-    TOKEN_EXPIRES, SHOP_TOKEN, get_token, get_products, get_product_by_id,
-    get_image_by_id)
+    get_products, get_product_by_id, add_product_to_cart, get_image_by_id)
 from main_menu_handler import handle_main_menu
 
 _database = None
@@ -34,25 +33,39 @@ def echo(bot, update):
 
 
 def handle_description(bot, update):
-    handle_main_menu(bot, update)
     query = update.callback_query
+    chat_id = update.effective_chat.id
     if query.data == 'back':
+        handle_main_menu(bot, update)
         return 'HANDLE_MENU'
-
+    else:
+        amount, product_id = query.data.split('|')
+        cart_id = query.message.chat.id
+        products_in_cart = add_product_to_cart(product_id, int(amount), cart_id)
+        print(products_in_cart)
+        bot.bot.send_message(
+            chat_id=chat_id,
+            text=products_in_cart, )
+        return 'HANDLE_DESCRIPTION'
 
 def handle_menu(bot, update):
     query = update.callback_query
-    keyboard = [[InlineKeyboardButton("В главное меню", callback_data='back')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
     prod_id = query.data
     product_description = get_product_by_id(prod_id)
+    keyboard = [
+        [InlineKeyboardButton('1кг', callback_data=f'{1}|{prod_id}'),
+         InlineKeyboardButton('5кг', callback_data=f'{5}|{prod_id}'),
+         InlineKeyboardButton('10кг', callback_data=f'{10}|{prod_id}')],
+        [InlineKeyboardButton('В главное меню', callback_data='back')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     img_id = product_description['data']['relationships']['main_image']['data']['id']
     image = get_image_by_id(img_id)
     text = textwrap.dedent(f'''
     Название: {product_description['data']['name']}
     Описание: {product_description['data']['description']}
-    Цена: {product_description['data']['meta']['display_price']['with_tax']['formatted']}
-    Наличие: {product_description['data']['meta']['stock']['availability']}''')
+    Цена: {product_description['data']['meta']['display_price']['with_tax']['formatted']} за кг.
+    Наличие на складе: {product_description['data']['meta']['stock']['level']} кг.''')
     chat_id = update.effective_chat.id
 
     if image:

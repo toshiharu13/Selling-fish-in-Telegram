@@ -55,7 +55,8 @@ def get_token():
     return SHOP_TOKEN
 
 
-def add_product_to_cart(auth_key, product_id, quantity, cart_id='card_id'):
+def add_product_to_cart(product_id, quantity, cart_id='card_id'):
+    auth_key = get_token()
     payload = {
         'data': {
             'id': product_id,
@@ -88,8 +89,7 @@ def main():
     products = get_products(elasticpath_token)
     current_product = products['data'][0]
     product_id = current_product['id']
-    products_in_cart = add_product_to_cart(
-        elasticpath_token, product_id, quantity=1)
+    products_in_cart = add_product_to_cart(product_id, quantity=1)
     print(get_products_in_cart(elasticpath_token))
 
 
