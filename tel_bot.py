@@ -34,6 +34,7 @@ def echo(bot, update):
 
 
 def handle_description(bot, update):
+    all_in_cart = ''
     query = update.callback_query
     chat_id = update.effective_chat.id
     if query.data == 'back':
@@ -42,6 +43,7 @@ def handle_description(bot, update):
     elif query.data == 'cart':
         products_in_cart = get_products_in_cart(chat_id)
         total_in_card = get_cart_total(chat_id)
+        print(total_in_card)
         for cart_item in products_in_cart["data"]:
             display_price = cart_item["meta"]["display_price"]["with_tax"]
 
@@ -52,19 +54,20 @@ def handle_description(bot, update):
                 {display_price['unit']['formatted']} per kg
                 {cart_item['quantity']} kg in cart for {display_price['value']['formatted']}
                 """)
-            bot.bot.send_message(
-                chat_id=chat_id,
-                text=text,)
+            all_in_cart += text + '\n'
+        all_in_cart += 'Total: ' + str(
+            total_in_card['data']['meta']['display_price']['with_tax']['formatted'])
+        bot.bot.send_message(
+            chat_id=chat_id,
+            text=all_in_cart,)
+        return 'HANDLE_DESCRIPTION'
 
     else:
         amount, product_id = query.data.split('|')
         cart_id = query.message.chat.id
         products_in_cart = add_product_to_cart(product_id, int(amount), cart_id)
-        print(products_in_cart)
-        bot.bot.send_message(
-            chat_id=chat_id,
-            text=products_in_cart, )
         return 'HANDLE_DESCRIPTION'
+
 
 def handle_menu(bot, update):
     query = update.callback_query
