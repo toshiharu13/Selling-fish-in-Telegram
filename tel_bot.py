@@ -15,6 +15,30 @@ from main_menu_handler import handle_main_menu
 _database = None
 
 
+def get_card_details(bot, update):
+    all_in_cart = ''
+    names_in_card = list()
+    chat_id = update.effective_chat.id
+    products_in_cart = get_products_in_cart(chat_id)
+    total_in_card = get_cart_total(chat_id)
+    print(total_in_card)
+    print(products_in_cart)
+    for cart_item in products_in_cart['data']:
+        display_price = cart_item['meta']['display_price']['with_tax']
+        names_in_card.append(cart_item['name'])
+        text = textwrap.dedent(
+            f"""\
+                    {cart_item['name']}
+                    {cart_item['description']}
+                    {display_price['unit']['formatted']} per kg
+                    {cart_item['quantity']} kg in cart for {display_price['value']['formatted']}
+                    """)
+        all_in_cart += text + '\n'
+    all_in_cart += 'Total: ' + str(
+        total_in_card['data']['meta']['display_price']['with_tax']['formatted'])
+    return all_in_cart, names_in_card
+
+
 def start(bot, update):
     handle_main_menu(bot, update)
     return 'HANDLE_MENU'
@@ -34,33 +58,15 @@ def echo(bot, update):
 
 
 def handle_description(bot, update):
-    all_in_cart = ''
     query = update.callback_query
     chat_id = update.effective_chat.id
+
     if query.data == 'back':
         handle_main_menu(bot, update)
         return 'HANDLE_MENU'
-    elif query.data == 'cart':
-        products_in_cart = get_products_in_cart(chat_id)
-        total_in_card = get_cart_total(chat_id)
-        print(total_in_card)
-        for cart_item in products_in_cart["data"]:
-            display_price = cart_item["meta"]["display_price"]["with_tax"]
 
-            text = textwrap.dedent(
-                f"""\
-                {cart_item['name']}
-                {cart_item['description']}
-                {display_price['unit']['formatted']} per kg
-                {cart_item['quantity']} kg in cart for {display_price['value']['formatted']}
-                """)
-            all_in_cart += text + '\n'
-        all_in_cart += 'Total: ' + str(
-            total_in_card['data']['meta']['display_price']['with_tax']['formatted'])
-        bot.bot.send_message(
-            chat_id=chat_id,
-            text=all_in_cart,)
-        return 'HANDLE_DESCRIPTION'
+    elif query.data == 'cart':
+        return 'HANDLE_CART'
 
     else:
         amount, product_id = query.data.split('|')
@@ -78,7 +84,7 @@ def handle_menu(bot, update):
          InlineKeyboardButton('5кг', callback_data=f'{5}|{prod_id}'),
          InlineKeyboardButton('10кг', callback_data=f'{10}|{prod_id}')],
         [InlineKeyboardButton('В главное меню', callback_data='back')],
-        [InlineKeyboardButton('Карзина', callback_data='cart')]]
+        [InlineKeyboardButton('Корзина', callback_data='cart')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     img_id = product_description['data']['relationships']['main_image']['data']['id']
@@ -108,6 +114,28 @@ def handle_menu(bot, update):
     return 'HANDLE_DESCRIPTION'
 
 
+def handle_card(bot, update):
+    chat_id = update.effective_chat.id
+    all_in_cart, names_in_card = get_card_details(bot, update)
+    keyboard = []
+    query = update.callback_query
+
+    if query.data == 'back':
+        handle_main_menu(bot, update)
+        return 'HANDLE_MENU'
+
+    for name in names_in_card:
+        keyboard.append([InlineKeyboardButton(f'убрать из корзины {name}', callback_data=name)])
+    keyboard.append([InlineKeyboardButton('В главное меню', callback_data='back')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    bot.bot.send_message(
+        chat_id=chat_id,
+        text=all_in_cart,
+        reply_markup=reply_markup,)
+    return 'HANDLE_CART'
+
+
 def handle_users_reply(update, bot):
     db = get_database_connection()
     if update.message:
@@ -128,6 +156,7 @@ def handle_users_reply(update, bot):
         'ECHO': echo,
         'HANDLE_MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
+        'HANDLE_CART': handle_card,
     }
     state_handler = states_functions[user_state]
     try:
