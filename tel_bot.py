@@ -9,7 +9,7 @@ import textwrap
 
 from elasticpath_api import (
     get_product_by_id, add_product_to_cart, get_image_by_id,
-    get_products_in_cart, get_cart_total)
+    get_products_in_cart, get_cart_total, remove_cart_item)
 from main_menu_handler import handle_main_menu
 
 _database = None
@@ -25,7 +25,7 @@ def get_card_details(bot, update):
     print(products_in_cart)
     for cart_item in products_in_cart['data']:
         display_price = cart_item['meta']['display_price']['with_tax']
-        names_in_card.append(cart_item['name'])
+        names_in_card.append((cart_item['name'], cart_item['id']))
         text = textwrap.dedent(
             f"""\
                     {cart_item['name']}
@@ -119,20 +119,23 @@ def handle_card(bot, update):
     all_in_cart, names_in_card = get_card_details(bot, update)
     keyboard = []
     query = update.callback_query
+    if query.data == 'cart':
+        for name, product_id in names_in_card:
+            keyboard.append([InlineKeyboardButton(f'убрать из корзины {name}', callback_data=product_id)])
+        keyboard.append([InlineKeyboardButton('В главное меню', callback_data='back')])
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
-    if query.data == 'back':
+        bot.bot.send_message(
+            chat_id=chat_id,
+            text=all_in_cart,
+            reply_markup=reply_markup,)
+
+    elif query.data == 'back':
         handle_main_menu(bot, update)
         return 'HANDLE_MENU'
+    else:
+        remove_cart_item(chat_id, query.data)
 
-    for name in names_in_card:
-        keyboard.append([InlineKeyboardButton(f'убрать из корзины {name}', callback_data=name)])
-    keyboard.append([InlineKeyboardButton('В главное меню', callback_data='back')])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    bot.bot.send_message(
-        chat_id=chat_id,
-        text=all_in_cart,
-        reply_markup=reply_markup,)
     return 'HANDLE_CART'
 
 

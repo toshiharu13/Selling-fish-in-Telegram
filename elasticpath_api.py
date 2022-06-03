@@ -88,13 +88,12 @@ def get_cart_total(cart_id):
     return response.json()
 
 
-def main():
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s: %(message)s')
-    logger.setLevel(logging.DEBUG)
+def remove_cart_item(cart_id, product_id):
+    auth_key = get_token()
+    headers = {'Authorization': f'Bearer {auth_key}', }
+    url = f"https://api.moltin.com/v2/carts/{cart_id}/items/{product_id}"
 
-    env = Env()
-    env.read_env()
+    response = requests.delete(url, headers=headers)
+    response.raise_for_status()
 
-
-if __name__ == '__main__':
-    main()
+    return response.json()
