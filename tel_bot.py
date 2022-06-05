@@ -123,6 +123,7 @@ def handle_card(bot, update):
         for name, product_id in names_in_card:
             keyboard.append([InlineKeyboardButton(f'убрать из корзины {name}', callback_data=product_id)])
         keyboard.append([InlineKeyboardButton('В главное меню', callback_data='back')])
+        keyboard.append([InlineKeyboardButton('оплатить', callback_data='payment')])
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         bot.bot.send_message(
@@ -133,10 +134,25 @@ def handle_card(bot, update):
     elif query.data == 'back':
         handle_main_menu(bot, update)
         return 'HANDLE_MENU'
+    elif query.data == 'payment':
+        bot.bot.send_message(
+            chat_id=chat_id,
+            text='Введите адрес электронной почты:',
+        )
+        return 'WAITING_EMAIL'
     else:
         remove_cart_item(chat_id, query.data)
 
     return 'HANDLE_CART'
+
+
+def waiting_email(bot, update):
+    user_email = update.message.text
+    chat_id = update.message.chat_id
+    bot.bot.send_message(
+        chat_id=chat_id,
+        text=f"Вы ввели адрес электронной почты: {user_email}")
+    return 'START'
 
 
 def handle_users_reply(update, bot):
@@ -160,6 +176,7 @@ def handle_users_reply(update, bot):
         'HANDLE_MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
         'HANDLE_CART': handle_card,
+        'WAITING_EMAIL': waiting_email,
     }
     state_handler = states_functions[user_state]
     try:
