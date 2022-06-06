@@ -1,6 +1,7 @@
 import os
 import logging
 import redis
+from validate_email import validate_email
 from dotenv import load_dotenv
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
@@ -53,6 +54,7 @@ def handle_description(bot, update):
         return 'HANDLE_MENU'
 
     elif query.data == 'cart':
+        handle_card(bot, update)
         return 'HANDLE_CART'
 
     else:
@@ -104,6 +106,7 @@ def handle_menu(bot, update):
 def handle_card(bot, update):
     chat_id = update.effective_chat.id
     all_in_cart, names_in_card = get_card_details(bot, update)
+    print(update.callback_query.data)
     keyboard = []
     query = update.callback_query
     if query.data == 'cart':
@@ -134,15 +137,27 @@ def handle_card(bot, update):
 
 
 def waiting_email(bot, update):
-    query = update.callback_query
-    print(query)
     user_email = update.message.text
     chat_id = update.message.chat_id
-    bot.bot.send_message(
-        chat_id=chat_id,
-        text=f"Вы ввели адрес электронной почты: {user_email}")
-
-    return 'HANDLE_MENU'
+    is_valid_mail = validate_email(
+        email_address=user_email,
+        check_blacklist=True,
+        check_dns=True,)
+    if is_valid_mail:
+        text = textwrap.dedent(f'''
+        Вы ввели адрес электронной почты: {user_email}
+        Ваш звонок очень важен для нас!
+        в ближайшее время к вам выедут наши менеджеры!''')
+        bot.bot.send_message(
+            chat_id=chat_id,
+            text=text,)
+        handle_main_menu(bot, update)
+        return 'HANDLE_MENU'
+    else:
+        bot.bot.send_message(
+            chat_id=chat_id,
+            text='Не верный адрес электронной почты', )
+        return 'WAITING_EMAIL'
 
 
 def handle_users_reply(update, bot):
