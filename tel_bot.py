@@ -21,8 +21,8 @@ def get_card_details(bot, update):
     chat_id = update.effective_chat.id
     products_in_cart = get_products_in_cart(chat_id)
     total_in_card = get_cart_total(chat_id)
-    print(total_in_card)
-    print(products_in_cart)
+    #print(total_in_card)
+    #print(products_in_cart)
     for cart_item in products_in_cart['data']:
         display_price = cart_item['meta']['display_price']['with_tax']
         names_in_card.append((cart_item['name'], cart_item['id']))
@@ -42,19 +42,6 @@ def get_card_details(bot, update):
 def start(bot, update):
     handle_main_menu(bot, update)
     return 'HANDLE_MENU'
-
-
-def echo(bot, update):
-    try:
-        users_reply = update.message.text
-        update.message.reply_text(users_reply)
-    except AttributeError:
-        users_reply = update.callback_query.data
-        chat_id = update.effective_chat.id
-    bot.bot.send_message(
-        chat_id=chat_id,
-        text=users_reply,)
-    return "ECHO"
 
 
 def handle_description(bot, update):
@@ -147,12 +134,15 @@ def handle_card(bot, update):
 
 
 def waiting_email(bot, update):
+    query = update.callback_query
+    print(query)
     user_email = update.message.text
     chat_id = update.message.chat_id
     bot.bot.send_message(
         chat_id=chat_id,
         text=f"Вы ввели адрес электронной почты: {user_email}")
-    return 'START'
+
+    return 'HANDLE_MENU'
 
 
 def handle_users_reply(update, bot):
@@ -172,7 +162,6 @@ def handle_users_reply(update, bot):
 
     states_functions = {
         'START': start,
-        'ECHO': echo,
         'HANDLE_MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
         'HANDLE_CART': handle_card,
