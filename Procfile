@@ -1,1 +1,1 @@
-python3 tel_bot.py
+tg_bot: python3 tel_bot.py
