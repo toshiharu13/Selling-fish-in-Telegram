@@ -1,19 +1,22 @@
-import os
 import logging
-import redis
-from validate_email import validate_email
-from dotenv import load_dotenv
-from telegram.ext import Filters, Updater
-from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import os
 import textwrap
 
-from elasticpath_api import (
-    get_product_by_id, add_product_to_cart, get_image_by_id,
-    get_products_in_cart, get_cart_total, remove_cart_item, create_customer)
+import redis
+from dotenv import load_dotenv
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
+                          MessageHandler, Updater)
+from validate_email import validate_email
+
+from elasticpath_api import (add_product_to_cart, create_customer,
+                             get_cart_total, get_image_by_id,
+                             get_product_by_id, get_products_in_cart,
+                             remove_cart_item)
 from main_menu_handler import handle_main_menu
 
 _database = None
+logger = logging.getLogger(__name__)
 
 
 def get_card_details(bot, update):
@@ -22,8 +25,7 @@ def get_card_details(bot, update):
     chat_id = update.effective_chat.id
     products_in_cart = get_products_in_cart(chat_id)
     total_in_card = get_cart_total(chat_id)
-    #print(total_in_card)
-    #print(products_in_cart)
+
     for cart_item in products_in_cart['data']:
         display_price = cart_item['meta']['display_price']['with_tax']
         names_in_card.append((cart_item['name'], cart_item['id']))
@@ -41,13 +43,20 @@ def get_card_details(bot, update):
 
 
 def start(bot, update):
+    """
+    Блок обработки начала работы с ботом
+    """
+    chat_id = update.effective_chat.id
+    bot.bot.send_message(chat_id=chat_id, text='Я чувствую волнение силы')
     handle_main_menu(bot, update)
     return 'HANDLE_MENU'
 
 
 def handle_description(bot, update):
+    """
+    Блок обработки нажатия клавиши меню выбранного товара
+    """
     query = update.callback_query
-    chat_id = update.effective_chat.id
 
     if query.data == 'back':
         handle_main_menu(bot, update)
@@ -61,10 +70,14 @@ def handle_description(bot, update):
         amount, product_id = query.data.split('|')
         cart_id = query.message.chat.id
         products_in_cart = add_product_to_cart(product_id, int(amount), cart_id)
+        logger.info(products_in_cart)
         return 'HANDLE_DESCRIPTION'
 
 
 def handle_menu(bot, update):
+    """
+    Блок обработки меню выбранного товара
+    """
     query = update.callback_query
     prod_id = query.data
     product_description = get_product_by_id(prod_id)
@@ -100,20 +113,28 @@ def handle_menu(bot, update):
     bot.bot.delete_message(
         chat_id=chat_id,
         message_id=query.message.message_id,)
+
     return 'HANDLE_DESCRIPTION'
 
 
 def handle_card(bot, update):
+    """
+    Блок обработки меню корзины
+    """
     chat_id = update.effective_chat.id
     all_in_cart, names_in_card = get_card_details(bot, update)
-    print(update.callback_query.data)
     keyboard = []
     query = update.callback_query
+
     if query.data == 'cart':
         for name, product_id in names_in_card:
-            keyboard.append([InlineKeyboardButton(f'убрать из корзины {name}', callback_data=product_id)])
-        keyboard.append([InlineKeyboardButton('В главное меню', callback_data='back')])
-        keyboard.append([InlineKeyboardButton('оплатить', callback_data='payment')])
+            keyboard.append(
+                [InlineKeyboardButton(
+                    f'убрать из корзины {name}', callback_data=product_id)])
+        keyboard.append(
+            [InlineKeyboardButton('В главное меню', callback_data='back')])
+        keyboard.append(
+            [InlineKeyboardButton('оплатить', callback_data='payment')])
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         bot.bot.send_message(
@@ -127,8 +148,7 @@ def handle_card(bot, update):
     elif query.data == 'payment':
         bot.bot.send_message(
             chat_id=chat_id,
-            text='Введите адрес электронной почты:',
-        )
+            text='Введите адрес электронной почты:',)
         return 'WAITING_EMAIL'
     else:
         remove_cart_item(chat_id, query.data)
@@ -137,6 +157,9 @@ def handle_card(bot, update):
 
 
 def waiting_email(bot, update):
+    """
+    Блок меню ввода и обработки почты при покупке товара
+    """
     user_email = update.message.text
     chat_id = update.message.chat_id
     is_valid_mail = validate_email(
@@ -154,7 +177,7 @@ def waiting_email(bot, update):
         handle_main_menu(bot, update)
 
         result = create_customer(str(chat_id), user_email)
-        print(result)
+        logger.info(f'создан клиент {result}')
 
         return 'HANDLE_MENU'
     else:
@@ -165,6 +188,9 @@ def waiting_email(bot, update):
 
 
 def handle_users_reply(update, bot):
+    """
+    Корневая функция
+    """
     db = get_database_connection()
     if update.message:
         user_reply = update.message.text
@@ -190,9 +216,9 @@ def handle_users_reply(update, bot):
     try:
         next_state = state_handler(bot, update)
         db.set(chat_id, next_state)
-        print(db.get(chat_id))
+        logger.info(db.get(chat_id))
     except Exception as err:
-        print(err)
+        logger.error(err, exc_info=True)
 
 
 def get_database_connection():
@@ -201,20 +227,26 @@ def get_database_connection():
     """
     global _database
     if _database is None:
-        #database_password = os.getenv("DATABASE_PASSWORD", 123)
         database_host = os.getenv("DATABASE_HOST", 'localhost')
         database_port = os.getenv("DATABASE_PORT", 6379)
-        _database = redis.Redis(host=database_host, port=database_port,
-                                decode_responses=True)
-                                #password=database_password)
+        _database = redis.Redis(
+            host=database_host,
+            port=database_port,
+            decode_responses=True)
     return _database
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s; %(levelname)s; %(name)s; %(message)s')
+    logger.setLevel(logging.DEBUG)
+    handler = logging.handlers.RotatingFileHandler('log.lod', maxBytes=2000, backupCount=2)
+    logger.addHandler(handler)
+
     load_dotenv()
     tg_token = os.getenv("TELEGRAM_TOKEN")
     updater = Updater(tg_token)
 
+    logger.info('Выходим из гиперпространства!')
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
     dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
