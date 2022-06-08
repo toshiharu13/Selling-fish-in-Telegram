@@ -237,9 +237,11 @@ def get_database_connection():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s; %(levelname)s; %(name)s; %(message)s')
+    logging.basicConfig(
+        format='%(asctime)s; %(levelname)s; %(name)s; %(message)s')
     logger.setLevel(logging.DEBUG)
-    handler = logging.handlers.RotatingFileHandler('log.lod', maxBytes=2000, backupCount=2)
+    handler = logging.handlers.RotatingFileHandler(
+        'log.lod', maxBytes=2000, backupCount=2)
     logger.addHandler(handler)
 
     load_dotenv()
