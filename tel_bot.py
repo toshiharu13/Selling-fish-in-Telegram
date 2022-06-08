@@ -10,7 +10,7 @@ import textwrap
 
 from elasticpath_api import (
     get_product_by_id, add_product_to_cart, get_image_by_id,
-    get_products_in_cart, get_cart_total, remove_cart_item)
+    get_products_in_cart, get_cart_total, remove_cart_item, create_customer)
 from main_menu_handler import handle_main_menu
 
 _database = None
@@ -152,6 +152,10 @@ def waiting_email(bot, update):
             chat_id=chat_id,
             text=text,)
         handle_main_menu(bot, update)
+
+        result = create_customer(str(chat_id), user_email)
+        print(result)
+
         return 'HANDLE_MENU'
     else:
         bot.bot.send_message(
