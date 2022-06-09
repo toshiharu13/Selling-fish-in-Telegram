@@ -18,10 +18,7 @@ def get_products():
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    decoded_response = response.json()
-    if 'error' in decoded_response:
-        raise requests.exceptions.HTTPError(decoded_response['error'])
-    return decoded_response
+    return response.json()
 
 
 def get_product_by_id(prod_id):
@@ -30,10 +27,7 @@ def get_product_by_id(prod_id):
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    decoded_response = response.json()
-    if 'error' in decoded_response:
-        raise requests.exceptions.HTTPError(decoded_response['error'])
-    return decoded_response
+    return response.json()
 
 
 def get_image_by_id(img_id):
@@ -42,11 +36,7 @@ def get_image_by_id(img_id):
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    decoded_response = response.json()
-    if 'error' in decoded_response:
-        raise requests.exceptions.HTTPError(decoded_response['error'])
-    img = decoded_response['data']['link']['href']
-    return img
+    return response.json()['data']['link']['href']
 
 
 def get_token():
@@ -60,8 +50,6 @@ def get_token():
                                  data=data)
         response.raise_for_status()
         decoded_response = response.json()
-        if 'error' in decoded_response:
-            raise requests.exceptions.HTTPError(decoded_response['error'])
 
         TOKEN_EXPIRES = decoded_response['expires']
         SHOP_TOKEN = decoded_response['access_token']
@@ -75,14 +63,11 @@ def add_product_to_cart(product_id, quantity, cart_id='card_id'):
             'type': 'cart_item',
             'quantity': quantity}}
     headers = get_headers()
-
     url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
+
     response = requests.post(url, headers=headers, json=payload)
     response.raise_for_status()
-    decoded_response = response.json()
-    if 'error' in decoded_response:
-        raise requests.exceptions.HTTPError(decoded_response['error'])
-    return decoded_response
+    return response.json()
 
 
 def get_products_in_cart(card_id):
@@ -91,10 +76,7 @@ def get_products_in_cart(card_id):
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    decoded_response = response.json()
-    if 'error' in decoded_response:
-        raise requests.exceptions.HTTPError(decoded_response['error'])
-    return decoded_response
+    return response.json()
 
 
 def get_cart_total(cart_id):
@@ -103,10 +85,7 @@ def get_cart_total(cart_id):
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    decoded_response = response.json()
-    if 'error' in decoded_response:
-        raise requests.exceptions.HTTPError(decoded_response['error'])
-    return decoded_response
+    return response.json()
 
 
 def remove_cart_item(cart_id, product_id):
@@ -115,10 +94,7 @@ def remove_cart_item(cart_id, product_id):
 
     response = requests.delete(url, headers=headers)
     response.raise_for_status()
-    decoded_response = response.json()
-    if 'error' in decoded_response:
-        raise requests.exceptions.HTTPError(decoded_response['error'])
-    return decoded_response
+    return response.json()
 
 
 def create_customer(user_name, user_email):
@@ -132,7 +108,4 @@ def create_customer(user_name, user_email):
 
     response = requests.post(url, headers=headers, json=payload)
     response.raise_for_status()
-    decoded_response = response.json()
-    if 'error' in decoded_response:
-        raise requests.exceptions.HTTPError(decoded_response['error'])
-    return decoded_response
+    return response.json()

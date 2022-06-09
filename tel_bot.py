@@ -23,10 +23,10 @@ def get_card_details(update, context):
     all_carts_items = ''
     card_names = list()
     chat_id = update.effective_chat.id
-    products_in_cart = get_products_in_cart(chat_id)
+    cart_products = get_products_in_cart(chat_id)
     total_in_card = get_cart_total(chat_id)
 
-    for cart_item in products_in_cart['data']:
+    for cart_item in cart_products['data']:
         display_price = cart_item['meta']['display_price']['with_tax']
         card_names.append((cart_item['name'], cart_item['id']))
         text = textwrap.dedent(
@@ -40,6 +40,7 @@ def get_card_details(update, context):
     all_carts_items += 'Total: ' + str(
         total_in_card['data']['meta']['display_price']['with_tax']['formatted'])
     return all_carts_items, card_names
+
 
 
 def start(update, context):
@@ -69,8 +70,8 @@ def handle_description(update, context):
     else:
         amount, product_id = query.data.split('|')
         cart_id = query.message.chat.id
-        products_in_cart = add_product_to_cart(product_id, int(amount), cart_id)
-        logger.info(products_in_cart)
+        cart_products = add_product_to_cart(product_id, int(amount), cart_id)
+        logger.info(cart_products)
         return 'HANDLE_DESCRIPTION'
 
 
@@ -122,12 +123,12 @@ def handle_card(update, context):
     Блок обработки меню корзины
     """
     chat_id = update.effective_chat.id
-    all_in_cart, names_in_card = get_card_details(update, context)
+    all_carts_items, cart_names = get_card_details(update, context)
     keyboard = []
     query = update.callback_query
 
     if query.data == 'cart':
-        for name, product_id in names_in_card:
+        for name, product_id in cart_names:
             keyboard.append(
                 [InlineKeyboardButton(
                     f'убрать из корзины {name}', callback_data=product_id)])
@@ -139,7 +140,7 @@ def handle_card(update, context):
 
         context.bot.send_message(
             chat_id=chat_id,
-            text=all_in_cart,
+            text=all_carts_items,
             reply_markup=reply_markup,)
 
     elif query.data == 'back':
