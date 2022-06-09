@@ -19,7 +19,7 @@ _database = None
 logger = logging.getLogger(__name__)
 
 
-def get_card_details(bot, update):
+def get_card_details(update, context):
     all_carts_items = ''
     card_names = list()
     chat_id = update.effective_chat.id
@@ -42,28 +42,28 @@ def get_card_details(bot, update):
     return all_carts_items, card_names
 
 
-def start(bot, update):
+def start(update, context):
     """
     Блок обработки начала работы с ботом
     """
     chat_id = update.effective_chat.id
-    bot.bot.send_message(chat_id=chat_id, text='Я чувствую волнение силы')
-    handle_main_menu(bot, update)
+    context.bot.send_message(chat_id=chat_id, text='Я чувствую волнение силы')
+    handle_main_menu(update, context)
     return 'HANDLE_MENU'
 
 
-def handle_description(bot, update):
+def handle_description(update, context):
     """
     Блок обработки нажатия клавиши меню выбранного товара
     """
     query = update.callback_query
 
     if query.data == 'back':
-        handle_main_menu(bot, update)
+        handle_main_menu(update, context)
         return 'HANDLE_MENU'
 
     elif query.data == 'cart':
-        handle_card(bot, update)
+        handle_card(update, context)
         return 'HANDLE_CART'
 
     else:
@@ -74,7 +74,7 @@ def handle_description(bot, update):
         return 'HANDLE_DESCRIPTION'
 
 
-def handle_menu(bot, update):
+def handle_menu(update, context):
     """
     Блок обработки меню выбранного товара
     """
@@ -99,30 +99,30 @@ def handle_menu(bot, update):
     chat_id = update.effective_chat.id
 
     if image:
-        bot.bot.send_photo(
+        context.bot.send_photo(
             photo=image,
             chat_id=chat_id,
             caption=text,
             reply_markup=reply_markup)
     else:
-        bot.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text=text,
             reply_markup=reply_markup)
 
-    bot.bot.delete_message(
+    context.bot.delete_message(
         chat_id=chat_id,
         message_id=query.message.message_id,)
 
     return 'HANDLE_DESCRIPTION'
 
 
-def handle_card(bot, update):
+def handle_card(update, context):
     """
     Блок обработки меню корзины
     """
     chat_id = update.effective_chat.id
-    all_in_cart, names_in_card = get_card_details(bot, update)
+    all_in_cart, names_in_card = get_card_details(update, context)
     keyboard = []
     query = update.callback_query
 
@@ -137,16 +137,16 @@ def handle_card(bot, update):
             [InlineKeyboardButton('оплатить', callback_data='payment')])
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        bot.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text=all_in_cart,
             reply_markup=reply_markup,)
 
     elif query.data == 'back':
-        handle_main_menu(bot, update)
+        handle_main_menu(update, context)
         return 'HANDLE_MENU'
     elif query.data == 'payment':
-        bot.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text='Введите адрес электронной почты:',)
         return 'WAITING_EMAIL'
@@ -156,7 +156,7 @@ def handle_card(bot, update):
     return 'HANDLE_CART'
 
 
-def waiting_email(bot, update):
+def waiting_email(update, context):
     """
     Блок меню ввода и обработки почты при покупке товара
     """
@@ -171,23 +171,23 @@ def waiting_email(bot, update):
         Вы ввели адрес электронной почты: {user_email}
         Ваш звонок очень важен для нас!
         в ближайшее время к вам выедут наши менеджеры!''')
-        bot.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text=text,)
-        handle_main_menu(bot, update)
+        handle_main_menu(update, context)
 
         result = create_customer(str(chat_id), user_email)
         logger.info(f'создан клиент {result}')
 
         return 'HANDLE_MENU'
     else:
-        bot.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text='Не верный адрес электронной почты', )
         return 'WAITING_EMAIL'
 
 
-def handle_users_reply(update, bot):
+def handle_users_reply(update, context):
     """
     Корневая функция
     """
@@ -214,7 +214,7 @@ def handle_users_reply(update, bot):
     }
     state_handler = states_functions[user_state]
     try:
-        next_state = state_handler(bot, update)
+        next_state = state_handler(update, context)
         db.set(chat_id, next_state)
         logger.info(db.get(chat_id))
     except Exception as err:
