@@ -42,7 +42,7 @@ def get_image_by_id(img_id):
 
 
 def get_token():
-    elasticpath_id = os.environ['ELASTICPATH']
+    elasticpath_id = os.environ['ELASTICPATH_CLIENT_ID']
     global TOKEN_EXPIRES, SHOP_TOKEN
     data = {
         'client_id': elasticpath_id,

@@ -23,7 +23,7 @@ pip install -r requirements.txt
 TELEGRAM_TOKEN = 'Telegram bot token '
 ```
 ```dotenv
-ELASTICPATH = 'Your elasticpath_user_id'
+ELASTICPATH_CLIENT_ID = 'Your elasticpath_user_id'
 ```
 ## Starting bot
 Just type
