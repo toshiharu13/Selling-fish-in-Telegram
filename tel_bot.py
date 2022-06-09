@@ -19,16 +19,16 @@ _database = None
 logger = logging.getLogger(__name__)
 
 
-def get_card_details(update, context):
+def get_cart_details(update, context):
     all_carts_items = ''
-    card_names = list()
+    cart_names = list()
     chat_id = update.effective_chat.id
     cart_products = get_products_in_cart(chat_id)
     total_in_card = get_cart_total(chat_id)
 
     for cart_item in cart_products['data']:
         display_price = cart_item['meta']['display_price']['with_tax']
-        card_names.append((cart_item['name'], cart_item['id']))
+        cart_names.append((cart_item['name'], cart_item['id']))
         text = textwrap.dedent(
             f"""\
                     {cart_item['name']}
@@ -39,7 +39,7 @@ def get_card_details(update, context):
         all_carts_items += text + '\n'
     all_carts_items += 'Total: ' + str(
         total_in_card['data']['meta']['display_price']['with_tax']['formatted'])
-    return all_carts_items, card_names
+    return all_carts_items, cart_names
 
 
 
@@ -123,7 +123,7 @@ def handle_card(update, context):
     Блок обработки меню корзины
     """
     chat_id = update.effective_chat.id
-    all_carts_items, cart_names = get_card_details(update, context)
+    all_carts_items, cart_names = get_cart_details(update, context)
     keyboard = []
     query = update.callback_query
 
@@ -163,11 +163,11 @@ def waiting_email(update, context):
     """
     user_email = update.message.text
     chat_id = update.message.chat_id
-    is_valid_mail = validate_email(
+    is_mail_valid = validate_email(
         email_address=user_email,
         check_blacklist=True,
         check_dns=True,)
-    if is_valid_mail:
+    if is_mail_valid:
         text = textwrap.dedent(f'''
         Вы ввели адрес электронной почты: {user_email}
         Ваш звонок очень важен для нас!
