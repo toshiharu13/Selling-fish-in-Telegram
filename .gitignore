@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 # pycharm config
 .idea
+# local logs
+log.lod*
