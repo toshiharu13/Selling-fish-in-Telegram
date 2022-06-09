@@ -7,13 +7,13 @@ TOKEN_EXPIRES = 0
 SHOP_TOKEN = ''
 
 
-def get_credentials():
+def get_headers():
     auth_key = get_token()
     return {'Authorization': f'Bearer {auth_key}'}
 
 
 def get_products():
-    headers = get_credentials()
+    headers = get_headers()
     url = 'https://api.moltin.com/v2/products'
 
     response = requests.get(url, headers=headers)
@@ -25,7 +25,7 @@ def get_products():
 
 
 def get_product_by_id(prod_id):
-    headers = get_credentials()
+    headers = get_headers()
     url = f'https://api.moltin.com/v2/products/{prod_id}'
 
     response = requests.get(url, headers=headers)
@@ -37,7 +37,7 @@ def get_product_by_id(prod_id):
 
 
 def get_image_by_id(img_id):
-    headers = get_credentials()
+    headers = get_headers()
     url = f'https://api.moltin.com/v2/files/{img_id}'
 
     response = requests.get(url, headers=headers)
@@ -74,7 +74,7 @@ def add_product_to_cart(product_id, quantity, cart_id='card_id'):
             'id': product_id,
             'type': 'cart_item',
             'quantity': quantity}}
-    headers = get_credentials()
+    headers = get_headers()
 
     url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
     response = requests.post(url, headers=headers, json=payload)
@@ -86,7 +86,7 @@ def add_product_to_cart(product_id, quantity, cart_id='card_id'):
 
 
 def get_products_in_cart(card_id):
-    headers = get_credentials()
+    headers = get_headers()
     url = f'https://api.moltin.com/v2/carts/{card_id}/items'
 
     response = requests.get(url, headers=headers)
@@ -98,7 +98,7 @@ def get_products_in_cart(card_id):
 
 
 def get_cart_total(cart_id):
-    headers = get_credentials()
+    headers = get_headers()
     url = f"https://api.moltin.com/v2/carts/{cart_id}"
 
     response = requests.get(url, headers=headers)
@@ -110,7 +110,7 @@ def get_cart_total(cart_id):
 
 
 def remove_cart_item(cart_id, product_id):
-    headers = get_credentials()
+    headers = get_headers()
     url = f"https://api.moltin.com/v2/carts/{cart_id}/items/{product_id}"
 
     response = requests.delete(url, headers=headers)
@@ -122,7 +122,7 @@ def remove_cart_item(cart_id, product_id):
 
 
 def create_customer(user_name, user_email):
-    headers = get_credentials()
+    headers = get_headers()
     url = "https://api.moltin.com/v2/customers"
     payload = {
         "data": {
