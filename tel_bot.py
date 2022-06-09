@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_card_details(bot, update):
-    all_in_cart = ''
+    all_items_in_cart = ''
     names_in_card = list()
     chat_id = update.effective_chat.id
     products_in_cart = get_products_in_cart(chat_id)
@@ -36,10 +36,10 @@ def get_card_details(bot, update):
                     {display_price['unit']['formatted']} per kg
                     {cart_item['quantity']} kg in cart for {display_price['value']['formatted']}
                     """)
-        all_in_cart += text + '\n'
-    all_in_cart += 'Total: ' + str(
+        all_items_in_cart += text + '\n'
+    all_items_in_cart += 'Total: ' + str(
         total_in_card['data']['meta']['display_price']['with_tax']['formatted'])
-    return all_in_cart, names_in_card
+    return all_items_in_cart, names_in_card
 
 
 def start(bot, update):
