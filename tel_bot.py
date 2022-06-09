@@ -218,7 +218,7 @@ def handle_users_reply(update, bot):
         db.set(chat_id, next_state)
         logger.info(db.get(chat_id))
     except Exception as err:
-        logger.error(err, exc_info=True)
+        logger.exception(err)
 
 
 def get_database_connection():
